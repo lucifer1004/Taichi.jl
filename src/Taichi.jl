@@ -1,12 +1,14 @@
 module Taichi
 
-using CondaPkg: add_pip
-using PythonCall: pycopy!, pyimport, pynew, pyconvert, pycompile, pyexec, pydict, pystr, pytype, pyprint
+using CondaPkg: add, add_pip
+using PythonCall: pycopy!, pyimport, pynew, pyconvert, pycompile, pyexec, pydict, pystr, pytype, pyprint, pytruth, pyeq,
+                  pyne, pyint
 using Jl2Py
 
-export ti, ti_func, ti_kernel, pytype, pyconvert
+export ti, np, ti_func, ti_kernel, pytype, pytruth, pyeq, pyne, pyint
 
 const ti = pynew()
+const np = pynew()
 const COUNTER = Ref{Int}(0)
 
 macro ti_func(func, locals)
@@ -44,8 +46,10 @@ macro ti_kernel(func, locals)
 end
 
 function __init__()
+    add("numpy")
     add_pip("taichi")
     pycopy!(ti, pyimport("taichi"))
+    pycopy!(np, pyimport("numpy"))
     return
 end
 

@@ -1,3 +1,5 @@
 
 [pip.deps]
 taichi = ""
+[deps]
+numpy = ""
