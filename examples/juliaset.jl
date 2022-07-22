@@ -23,7 +23,7 @@ let
     gui = ti.GUI("Julia Set"; res=(n * 2, n))
     i = 0
     flag = 0
-    while pyconvert(Bool, gui.running)
+    while pytruth(gui.running)
         if flag == 0
             i -= 1
             if i * 0.02 <= 0.2

@@ -7,6 +7,15 @@
 
 ## Examples
 
+### Julia Set
+
 ```bash
 julia --project=. examples/juliaset.jl
 ```
+
+### Game of Life
+
+```bash
+julia --project=. examples/gameoflife.jl
+```
+
