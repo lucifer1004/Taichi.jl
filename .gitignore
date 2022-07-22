@@ -1,4 +1,7 @@
 *.jl.*.cov
 *.jl.cov
 *.jl.mem
+/*.jl
+/.CondaPkg
 /docs/build/
+__tmp__.py
