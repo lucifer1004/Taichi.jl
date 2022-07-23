@@ -2,15 +2,14 @@ module Taichi
 
 using CondaPkg: add, add_pip
 using PythonCall: pycopy!, pyimport, pynew, pyconvert, pycompile, pyexec, pydict, pystr, pytype, pyprint, pytruth, pyeq,
-                  pyne, pyint, pywith, PyList
+                  pyne, pyint, pywith, Py, PyList
 using Jl2Py
 
-export ti, np, ti_func, ti_kernel, pytype, pytruth, pyeq, pyne, pyint, pywith, PyList
+export ti, np, ti_func, ti_kernel, pytype, pytruth, pyeq, pyne, pyint, pywith, Py, PyList
 
 const ti = pynew()
 const np = pynew()
 const COUNTER = Ref{Int}(0)
-const TMP = "__tmp__.py"
 
 macro ti_func(func, locals)
     py_func = jl2py(:($func))

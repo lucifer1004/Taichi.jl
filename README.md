@@ -19,3 +19,8 @@ julia --project=. examples/juliaset.jl
 julia --project=. examples/gameoflife.jl
 ```
 
+### FEM99
+
+```bash
+julia --project=. examples/fem99.jl
+```
