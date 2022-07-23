@@ -4,4 +4,4 @@
 /*.jl
 /.CondaPkg
 /docs/build/
-__tmp__.py
+__tmp__*.py

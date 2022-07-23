@@ -2,14 +2,15 @@ module Taichi
 
 using CondaPkg: add, add_pip
 using PythonCall: pycopy!, pyimport, pynew, pyconvert, pycompile, pyexec, pydict, pystr, pytype, pyprint, pytruth, pyeq,
-                  pyne, pyint
+                  pyne, pyint, pywith, PyList
 using Jl2Py
 
-export ti, np, ti_func, ti_kernel, pytype, pytruth, pyeq, pyne, pyint
+export ti, np, ti_func, ti_kernel, pytype, pytruth, pyeq, pyne, pyint, pywith, PyList
 
 const ti = pynew()
 const np = pynew()
 const COUNTER = Ref{Int}(0)
+const TMP = "__tmp__.py"
 
 macro ti_func(func, locals)
     py_func = jl2py(:($func))
@@ -18,10 +19,11 @@ macro ti_func(func, locals)
     quote
         py_func_name = "compiled_julia_func_$(COUNTER[])"
         $py_func.name = pystr(py_func_name)
+        py_str = "@ti.func\n" * pyconvert(String, unparse($py_func)) * "\n"
+        tmp_file_name = "__tmp__$(COUNTER[]).py"
+        write(tmp_file_name, py_str)
         COUNTER[] += 1
-        py_str = "@ti.func\n" * pyconvert(String, unparse($py_func))
-        write("__tmp__.py", py_str)
-        code = pycompile(py_str; filename="__tmp__.py", mode="exec")
+        code = pycompile(py_str; filename=tmp_file_name, mode="exec")
         namespace = pydict(["ti" => ti, $(esc(locals))...])
         pyexec(code, namespace)
         namespace.get(py_func_name)
@@ -33,12 +35,13 @@ macro ti_kernel(func, locals)
     py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
 
     quote
-        py_func_name = "compiled_julia_kernel_$(COUNTER[])"
+        py_func_name = "compiled_julia_func_$(COUNTER[])"
         $py_func.name = pystr(py_func_name)
+        py_str = "@ti.kernel\n" * pyconvert(String, unparse($py_func)) * "\n"
+        tmp_file_name = "__tmp__$(COUNTER[]).py"
+        write(tmp_file_name, py_str)
         COUNTER[] += 1
-        py_str = "@ti.kernel\n" * pyconvert(String, unparse($py_func))
-        write("__tmp__.py", py_str)
-        code = pycompile(py_str; filename="__tmp__.py", mode="exec")
+        code = pycompile(py_str; filename=tmp_file_name, mode="exec")
         namespace = pydict(["ti" => ti, $(esc(locals))...])
         pyexec(code, namespace)
         namespace.get(py_func_name)

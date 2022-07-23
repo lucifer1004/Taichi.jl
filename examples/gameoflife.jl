@@ -7,7 +7,7 @@ let
     img_size = n * cell_size
     alive = ti.field(pytype(1); shape=(n, n))  # alive = 1, dead = 0
     count = ti.field(pytype(1); shape=(n, n))  # count of neighbours
-    B, S = [3], [2, 3]
+    B, S = PyList([3]), PyList([2, 3])
     locals = map(x -> string(x.first) => x.second, collect(Base.@locals))
 
     get_count = Taichi.@ti_func(function f(i, j)
@@ -36,6 +36,7 @@ let
                                 end, locals)
 
 
+    locals = map(x -> string(x.first) => x.second, collect(Base.@locals))
     run = Taichi.@ti_kernel(function f()
                                 for (i, j) in alive
                                     count[i, j] = get_count(i, j)
