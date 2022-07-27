@@ -38,12 +38,18 @@ macro taichify(func, decorator)
     end
 end
 
+"""
+Wrap the given function into a Taichi `func`.
+"""
 macro ti_func(func)
     quote
         @taichify $func "@ti.func"
     end
 end
 
+"""
+Wrap the given function into a Taichi `kernel`.
+"""
 macro ti_kernel(func)
     quote
         @taichify $func "@ti.kernel"

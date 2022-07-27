@@ -2,6 +2,7 @@
 *.jl.cov
 *.jl.mem
 /*.jl
-/.CondaPkg
+.CondaPkg
 /docs/build/
+/docs/CondaPkg.toml
 __tmp__*.py
