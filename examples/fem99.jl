@@ -26,82 +26,80 @@ let
     phi = ti.field(float, NF)  # potential energy of each face (Neo-Hookean)
     U = ti.field(float, (); needs_grad=true)  # total potential energy
 
-    locals = map(x -> string(x.first) => x.second, collect(Base.@locals))
-
-    update_U = Taichi.@ti_kernel(function f()
-                                     for i in 0:(NF - 1)
-                                         ia, ib, ic = f2v[i]
-                                         a, b, c = pos[ia], pos[ib], pos[ic]
-                                         V[i] = abs((a - c).cross(b - c))
-                                         D_i = ti.Matrix.cols([a - c, b - c])
-                                         F[i] = D_i.__matmul__(B[i])
-                                     end
-                                     for i in 0:(NF - 1)
-                                         F_i = F[i]
-                                         log_J_i = ti.log(F_i.determinant())
-                                         phi_i = mu / 2 * ((F_i.transpose().__matmul__(F_i)).trace() - 2)
-                                         phi_i -= mu * log_J_i
-                                         phi_i += lam / 2 * log_J_i^2
-                                         phi[i] = phi_i
-                                         U[nothing] += V[i] * phi_i
-                                     end
-                                 end, locals)
+    update_U = @ti_kernel function f()
+        for i in 0:(NF - 1)
+            ia, ib, ic = f2v[i]
+            a, b, c = pos[ia], pos[ib], pos[ic]
+            V[i] = abs((a - c).cross(b - c))
+            D_i = ti.Matrix.cols([a - c, b - c])
+            F[i] = D_i.__matmul__(B[i])
+        end
+        for i in 0:(NF - 1)
+            F_i = F[i]
+            log_J_i = ti.log(F_i.determinant())
+            phi_i = mu / 2 * ((F_i.transpose().__matmul__(F_i)).trace() - 2)
+            phi_i -= mu * log_J_i
+            phi_i += lam / 2 * log_J_i^2
+            phi[i] = phi_i
+            U[nothing] += V[i] * phi_i
+        end
+    end
 
 
-    advance = Taichi.@ti_kernel(function f()
-                                    for i in 0:(NV - 1)
-                                        acc = -pos.grad[i] / (rho * dx^2)
-                                        vel[i] += dt * (acc + gravity)
-                                        vel[i] *= ti.exp(-dt * damping)
-                                    end
-                                    for i in 0:(NV - 1)
-                                        # ball boundary condition:
-                                        disp = pos[i] - ball_pos
-                                        disp2 = disp.norm_sqr()
-                                        if disp2 <= ball_radius^2
-                                            NoV = vel[i].dot(disp)
-                                            if NoV < 0
-                                                vel[i] -= NoV * disp / disp2
-                                            end
-                                        end
-                                        # rect boundary condition:
-                                        cond = (pos[i] < 0) & (vel[i] < 0) | (pos[i] > 1) & (vel[i] > 0)
-                                        for j in ti.static(0:(pos.n - 1))
-                                            if cond[j]
-                                                vel[i][j] = 0
-                                            end
-                                        end
-                                        pos[i] += dt * vel[i]
-                                    end
-                                end, locals)
+    advance = @ti_kernel function f()
+        for i in 0:(NV - 1)
+            acc = -pos.grad[i] / (rho * dx^2)
+            vel[i] += dt * (acc + gravity)
+            vel[i] *= ti.exp(-dt * damping)
+        end
+        for i in 0:(NV - 1)
+            # ball boundary condition:
+            disp = pos[i] - ball_pos
+            disp2 = disp.norm_sqr()
+            if disp2 <= ball_radius^2
+                NoV = vel[i].dot(disp)
+                if NoV < 0
+                    vel[i] -= NoV * disp / disp2
+                end
+            end
+            # rect boundary condition:
+            cond = (pos[i] < 0) & (vel[i] < 0) | (pos[i] > 1) & (vel[i] > 0)
+            for j in ti.static(0:(pos.n - 1))
+                if cond[j]
+                    vel[i][j] = 0
+                end
+            end
+            pos[i] += dt * vel[i]
+        end
+    end
 
 
-    init_pos = Taichi.@ti_kernel(function f()
-                                     for (i, j) in ti.ndrange(N + 1, N + 1)
-                                         k = i * (N + 1) + j
-                                         pos[k] = ti.Vector([i, j]) / N * 0.25 + ti.Vector([0.45, 0.45])
-                                         vel[k] = ti.Vector([0, 0])
-                                     end
-                                     for i in 0:(NF - 1)
-                                         ia, ib, ic = f2v[i]
-                                         a, b, c = pos[ia], pos[ib], pos[ic]
-                                         B_i_inv = ti.Matrix.cols([a - c, b - c])
-                                         B[i] = B_i_inv.inverse()
-                                     end
-                                 end, locals)
+    init_pos = @ti_kernel function f()
+        for (i, j) in ti.ndrange(N + 1, N + 1)
+            k = i * (N + 1) + j
+            pos[k] = ti.Vector([i, j]) / N * 0.25 + ti.Vector([0.45, 0.45])
+            vel[k] = ti.Vector([0, 0])
+        end
+        for i in 0:(NF - 1)
+            ia, ib, ic = f2v[i]
+            a, b, c = pos[ia], pos[ib], pos[ic]
+            B_i_inv = ti.Matrix.cols([a - c, b - c])
+            B[i] = B_i_inv.inverse()
+        end
+    end
 
 
-    init_mesh = Taichi.@ti_kernel(function f()
-                                      for (i, j) in ti.ndrange(N, N)
-                                          k = (i * N + j) * 2
-                                          a = i * (N + 1) + j
-                                          b = a + 1
-                                          c = a + N + 2
-                                          d = a + N + 1
-                                          f2v[k + 0] = [a, b, c]
-                                          f2v[k + 1] = [c, d, a]
-                                      end
-                                  end, locals)
+    init_mesh = @ti_kernel function f()
+        for (i, j) in ti.ndrange(N, N)
+            k = (i * N + j) * 2
+            a = i * (N + 1) + j
+            b = a + 1
+            c = a + N + 2
+            d = a + N + 1
+            f2v[k + 0] = [a, b, c]
+            f2v[k + 1] = [c, d, a]
+        end
+    end
 
 
     init_mesh()

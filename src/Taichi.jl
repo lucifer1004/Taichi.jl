@@ -5,13 +5,13 @@ using PythonCall: pycopy!, pyimport, pynew, pyconvert, pycompile, pyexec, pydict
                   pyne, pyint, pywith, Py, PyList
 using Jl2Py
 
-export ti, np, ti_func, ti_kernel, pytype, pytruth, pyeq, pyne, pyint, pywith, Py, PyList
+export ti, np, @ti_func, @ti_kernel, pytype, pytruth, pyeq, pyne, pyint, pywith, Py, PyList
 
 const ti = pynew()
 const np = pynew()
 const COUNTER = Ref{Int}(0)
 
-macro ti_func(func, locals)
+macro ti_func(func)
     py_func = jl2py(:($func))
     py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
 
@@ -23,13 +23,13 @@ macro ti_func(func, locals)
         write(tmp_file_name, py_str)
         COUNTER[] += 1
         code = pycompile(py_str; filename=tmp_file_name, mode="exec")
-        namespace = pydict(["ti" => ti, $(esc(locals))...])
+        namespace = pydict(["ti" => ti, map(x -> string(x.first) => x.second, collect(Base.@locals))...])
         pyexec(code, namespace)
         namespace.get(py_func_name)
     end
 end
 
-macro ti_kernel(func, locals)
+macro ti_kernel(func)
     py_func = jl2py(:($func))
     py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
 
@@ -41,7 +41,7 @@ macro ti_kernel(func, locals)
         write(tmp_file_name, py_str)
         COUNTER[] += 1
         code = pycompile(py_str; filename=tmp_file_name, mode="exec")
-        namespace = pydict(["ti" => ti, $(esc(locals))...])
+        namespace = pydict(["ti" => ti, map(x -> string(x.first) => x.second, collect(Base.@locals))...])
         pyexec(code, namespace)
         namespace.get(py_func_name)
     end

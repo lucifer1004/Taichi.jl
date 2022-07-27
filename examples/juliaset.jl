@@ -4,21 +4,20 @@ let
     ti.init(; arch=ti.gpu)
     n = 640
     pixels = ti.Vector.field(3; dtype=pytype(1.0), shape=(n * 2, n))
-    locals = map(x -> string(x.first) => x.second, collect(Base.@locals))
 
-    paint = Taichi.@ti_kernel(function f(t::Float64)
-                                  for (i, j) in pixels
-                                      c = ti.Vector([-0.8, ti.cos(t) * 0.2])
-                                      z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
-                                      rgb = ti.Vector([0, 1, 1])
-                                      iterations = 0
-                                      while z.norm() < 20 && iterations < 50
-                                          z = ti.Vector([z[0]^2 - z[1]^2, z[0] * z[1] * 2]) + c
-                                          iterations += 1
-                                          pixels[i, j] = (1 - iterations * 0.02) * rgb
-                                      end
-                                  end
-                              end, locals)
+    paint = @ti_kernel function f(t::Float64)
+        for (i, j) in pixels
+            c = ti.Vector([-0.8, ti.cos(t) * 0.2])
+            z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
+            rgb = ti.Vector([0, 1, 1])
+            iterations = 0
+            while z.norm() < 20 && iterations < 50
+                z = ti.Vector([z[0]^2 - z[1]^2, z[0] * z[1] * 2]) + c
+                iterations += 1
+                pixels[i, j] = (1 - iterations * 0.02) * rgb
+            end
+        end
+    end
 
     gui = ti.GUI("Julia Set"; res=(n * 2, n))
 

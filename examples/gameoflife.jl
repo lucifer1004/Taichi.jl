@@ -8,56 +8,52 @@ let
     alive = ti.field(pytype(1); shape=(n, n))  # alive = 1, dead = 0
     count = ti.field(pytype(1); shape=(n, n))  # count of neighbours
     B, S = PyList([3]), PyList([2, 3])
-    locals = map(x -> string(x.first) => x.second, collect(Base.@locals))
 
-    get_count = Taichi.@ti_func(function f(i, j)
-                                    return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
-                                            alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
-                                            alive[i - 1, j + 1] + alive[i + 1, j + 1])
-                                end, locals)
-
-
-    calc_rule = Taichi.@ti_func(function f(a, c)
-                                    if a == 0
-                                        for t in ti.static(B)
-                                            if c == t
-                                                a = 1
-                                            end
-                                        end
-                                    elseif a == 1
-                                        a = 0
-                                        for t in ti.static(S)
-                                            if c == t
-                                                a = 1
-                                            end
-                                        end
-                                    end
-                                    return a
-                                end, locals)
+    get_count = @ti_func function f(i, j)
+        return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
+                alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
+                alive[i - 1, j + 1] + alive[i + 1, j + 1])
+    end
 
 
-    locals = map(x -> string(x.first) => x.second, collect(Base.@locals))
-    run = Taichi.@ti_kernel(function f()
-                                for (i, j) in alive
-                                    count[i, j] = get_count(i, j)
-                                end
+    calc_rule = @ti_func function f(a, c)
+        if a == 0
+            for t in ti.static(B)
+                if c == t
+                    a = 1
+                end
+            end
+        elseif a == 1
+            a = 0
+            for t in ti.static(S)
+                if c == t
+                    a = 1
+                end
+            end
+        end
+        return a
+    end
 
-                                for (i, j) in alive
-                                    alive[i, j] = calc_rule(alive[i, j], count[i, j])
-                                end
-                            end, locals)
+    run = @ti_kernel function f()
+        for (i, j) in alive
+            count[i, j] = get_count(i, j)
+        end
+
+        for (i, j) in alive
+            alive[i, j] = calc_rule(alive[i, j], count[i, j])
+        end
+    end
 
 
-    init = Taichi.@ti_kernel(function f()
-                                 for (i, j) in alive
-                                     if ti.random() > 0.8
-                                         alive[i, j] = 1
-                                     else
-                                         alive[i, j] = 0
-                                     end
-                                 end
-                             end, locals)
-
+    init = @ti_kernel function f()
+        for (i, j) in alive
+            if ti.random() > 0.8
+                alive[i, j] = 1
+            else
+                alive[i, j] = 0
+            end
+        end
+    end
 
     gui = ti.GUI("Game of Life", (img_size, img_size))
     gui.fps_limit = 15
