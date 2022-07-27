@@ -9,17 +9,23 @@
 
 ### Julia Set
 
+![Julia Set GIF](./gif/juliaset.gif)
+
 ```bash
 julia --project=. examples/juliaset.jl
 ```
 
 ### Game of Life
 
+![Game of Life GIF](gif/gameoflife.gif)
+
 ```bash
 julia --project=. examples/gameoflife.jl
 ```
 
 ### FEM99
+
+![FEM99 GIF](gif/fem99.gif)
 
 ```bash
 julia --project=. examples/fem99.jl
