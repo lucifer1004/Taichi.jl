@@ -1,11 +1,12 @@
 module Taichi
 
 using CondaPkg: add, add_pip
-using PythonCall: pycopy!, pyimport, pynew, pyconvert, pycompile, pyexec, pydict, pystr, pytype, pyprint, pytruth, pyeq,
-                  pyne, pyint, pywith, Py, PyList
+using Reexport
+@reexport using PythonCall
+using PythonCall: pycopy!, pynew
 using Jl2Py
 
-export ti, np, @ti_func, @ti_kernel, pytype, pytruth, pyeq, pyne, pyint, pywith, Py, PyList
+export ti, np, @ti_func, @ti_kernel
 
 const ti = pynew()
 const np = pynew()
@@ -25,13 +26,13 @@ macro taichify(func, decorator)
     py_func = jl2py(func_expr)
     py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
     py_func.name = py_func_name
+    tmp_file_name = "__tmp__$(COUNTER[]).py"
+    COUNTER[] += 1
 
     quote
         py_str = "$($decorator)\n" * pyconvert(String, unparse($py_func)) * "\n"
-        tmp_file_name = "__tmp__$(COUNTER[]).py"
-        write(tmp_file_name, py_str)
-        COUNTER[] += 1
-        code = pycompile(py_str; filename=tmp_file_name, mode="exec")
+        write($tmp_file_name, py_str)
+        code = pycompile(py_str; filename=$tmp_file_name, mode="single")
         namespace = pydict(["ti" => ti, map(x -> string(x.first) => x.second, collect(Base.@locals))...])
         pyexec(code, namespace)
         namespace.get($py_func_name)
