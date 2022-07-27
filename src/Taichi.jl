@@ -16,8 +16,11 @@ macro taichify(func, decorator)
     py_func_name = "compiled_julia_func_$(COUNTER[])"
     if func_expr.head == :-> || (func_expr.args[1].head ∉ [:call, :(::)])
         func_expr.head = :function
-        func_expr.args[1].head == :tuple || error("Invalid function definition")
-        func_expr.args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1].args...)
+        if func_expr.args[1].head == :tuple
+            func_expr.args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1].args...)
+        else
+            func_expr.args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1])
+        end
     end
     py_func = jl2py(func_expr)
     py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
