@@ -11,39 +11,39 @@ const ti = pynew()
 const np = pynew()
 const COUNTER = Ref{Int}(0)
 
-macro ti_func(func)
-    py_func = jl2py(:($func))
+macro taichify(func, decorator)
+    func_expr = :($func)
+    py_func_name = "compiled_julia_func_$(COUNTER[])"
+    if func_expr.head == :-> || (func_expr.args[1].head ∉ [:call, :(::)])
+        func_expr.head = :function
+        func_expr.args[1].head == :tuple || error("Invalid function definition")
+        func_expr.args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1].args...)
+    end
+    py_func = jl2py(func_expr)
     py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
+    py_func.name = py_func_name
 
     quote
-        py_func_name = "compiled_julia_func_$(COUNTER[])"
-        $py_func.name = pystr(py_func_name)
-        py_str = "@ti.func\n" * pyconvert(String, unparse($py_func)) * "\n"
+        py_str = "$($decorator)\n" * pyconvert(String, unparse($py_func)) * "\n"
         tmp_file_name = "__tmp__$(COUNTER[]).py"
         write(tmp_file_name, py_str)
         COUNTER[] += 1
         code = pycompile(py_str; filename=tmp_file_name, mode="exec")
         namespace = pydict(["ti" => ti, map(x -> string(x.first) => x.second, collect(Base.@locals))...])
         pyexec(code, namespace)
-        namespace.get(py_func_name)
+        namespace.get($py_func_name)
+    end
+end
+
+macro ti_func(func)
+    quote
+        @taichify $func "@ti.func"
     end
 end
 
 macro ti_kernel(func)
-    py_func = jl2py(:($func))
-    py_func.args.args, py_func.args.posonlyargs = py_func.args.posonlyargs, py_func.args.args
-
     quote
-        py_func_name = "compiled_julia_func_$(COUNTER[])"
-        $py_func.name = pystr(py_func_name)
-        py_str = "@ti.kernel\n" * pyconvert(String, unparse($py_func)) * "\n"
-        tmp_file_name = "__tmp__$(COUNTER[]).py"
-        write(tmp_file_name, py_str)
-        COUNTER[] += 1
-        code = pycompile(py_str; filename=tmp_file_name, mode="exec")
-        namespace = pydict(["ti" => ti, map(x -> string(x.first) => x.second, collect(Base.@locals))...])
-        pyexec(code, namespace)
-        namespace.get(py_func_name)
+        @taichify $func "@ti.kernel"
     end
 end
 

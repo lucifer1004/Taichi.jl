@@ -9,14 +9,12 @@ let
     count = ti.field(pytype(1); shape=(n, n))  # count of neighbours
     B, S = PyList([3]), PyList([2, 3])
 
-    get_count = @ti_func function f(i, j)
-        return (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
-                alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
-                alive[i - 1, j + 1] + alive[i + 1, j + 1])
-    end
+    get_count = @ti_func (i, j) -> (alive[i - 1, j] + alive[i + 1, j] + alive[i, j - 1] +
+                                    alive[i, j + 1] + alive[i - 1, j - 1] + alive[i + 1, j - 1] +
+                                    alive[i - 1, j + 1] + alive[i + 1, j + 1])
 
 
-    calc_rule = @ti_func function f(a, c)
+    calc_rule = @ti_func (a, c) -> begin
         if a == 0
             for t in ti.static(B)
                 if c == t
@@ -31,10 +29,11 @@ let
                 end
             end
         end
+
         return a
     end
 
-    run = @ti_kernel function f()
+    run = @ti_kernel () -> begin
         for (i, j) in alive
             count[i, j] = get_count(i, j)
         end
@@ -45,13 +44,11 @@ let
     end
 
 
-    init = @ti_kernel function f()
-        for (i, j) in alive
-            if ti.random() > 0.8
-                alive[i, j] = 1
-            else
-                alive[i, j] = 0
-            end
+    init = @ti_kernel () -> for (i, j) in alive
+        if ti.random() > 0.8
+            alive[i, j] = 1
+        else
+            alive[i, j] = 0
         end
     end
 

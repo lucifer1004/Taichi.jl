@@ -26,7 +26,7 @@ let
     phi = ti.field(float, NF)  # potential energy of each face (Neo-Hookean)
     U = ti.field(float, (); needs_grad=true)  # total potential energy
 
-    update_U = @ti_kernel function f()
+    update_U = @ti_kernel () -> begin
         for i in 0:(NF - 1)
             ia, ib, ic = f2v[i]
             a, b, c = pos[ia], pos[ib], pos[ic]
@@ -46,7 +46,7 @@ let
     end
 
 
-    advance = @ti_kernel function f()
+    advance = @ti_kernel () -> begin
         for i in 0:(NV - 1)
             acc = -pos.grad[i] / (rho * dx^2)
             vel[i] += dt * (acc + gravity)
@@ -74,7 +74,7 @@ let
     end
 
 
-    init_pos = @ti_kernel function f()
+    init_pos = @ti_kernel () -> begin
         for (i, j) in ti.ndrange(N + 1, N + 1)
             k = i * (N + 1) + j
             pos[k] = ti.Vector([i, j]) / N * 0.25 + ti.Vector([0.45, 0.45])
@@ -89,7 +89,7 @@ let
     end
 
 
-    init_mesh = @ti_kernel function f()
+    init_mesh = @ti_kernel () -> begin
         for (i, j) in ti.ndrange(N, N)
             k = (i * N + j) * 2
             a = i * (N + 1) + j
