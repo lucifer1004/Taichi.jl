@@ -19,8 +19,10 @@ macro taichify(func, decorator)
         func_expr.head = :function
         if func_expr.args[1].head == :tuple
             func_expr.args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1].args...)
-        else
+        elseif func_expr.args[1].head != :(::) || isa(func_expr.args[1].args[1], Symbol)
             func_expr.args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1])
+        else
+            func_expr.args[1].args[1] = Expr(:call, Symbol(py_func_name), func_expr.args[1].args[1].args...)
         end
     end
     py_func = jl2py(func_expr)
