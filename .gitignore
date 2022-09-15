@@ -7,3 +7,4 @@
 /docs/CondaPkg.toml
 __tmp__*.py
 /Manifest.toml
+/CondaPkg.toml
