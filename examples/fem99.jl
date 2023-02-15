@@ -32,12 +32,12 @@ let
             a, b, c = pos[ia], pos[ib], pos[ic]
             V[i] = abs((a - c).cross(b - c))
             D_i = ti.Matrix.cols([a - c, b - c])
-            F[i] = D_i.__matmul__(B[i])
+            F[i] = D_i.matmul(B[i])
         end
         for i in 0:(NF - 1)
             F_i = F[i]
             log_J_i = ti.log(F_i.determinant())
-            phi_i = mu / 2 * ((F_i.transpose().__matmul__(F_i)).trace() - 2)
+            phi_i = mu / 2 * ((F_i.transpose().matmul(F_i)).trace() - 2)
             phi_i -= mu * log_J_i
             phi_i += lam / 2 * log_J_i^2
             phi[i] = phi_i
