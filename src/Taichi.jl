@@ -1,10 +1,13 @@
 module Taichi
 
 using CondaPkg: add, add_pip
+using Libdl: dlext
 using Reexport
 @reexport using PythonCall
 using PythonCall: pycopy!, pynew
 using Jl2Py
+
+include("capi.jl")
 
 export ti, np, @ti_func, @ti_kernel
 
@@ -72,6 +75,22 @@ function __init__()
     add_pip("taichi")
     pycopy!(ti, pyimport("taichi"))
     pycopy!(np, pyimport("numpy"))
+
+    ti_path = string(ti.__path__[0])
+    ENV["TI_LIB_DIR"] = joinpath(ti_path, "_lib", "runtime")
+
+    lib_path_1 = joinpath(ti_path, "_lib", "c_api", "lib", "libtaichi_c_api.$(dlext)")
+    if isfile(lib_path_1)
+        libtaichi[] = lib_path_1
+    else
+        lib_path_2 = joinpath(ti_path, "..", "..", "..", "..", "c_api", "lib", "libtaichi_c_api.$(dlext)")
+        if isfile(lib_path_2)
+            libtaichi[] = lib_path_2
+        else
+            error("Cannot find libtaichi_c_api")
+        end
+    end
+
     return
 end
 

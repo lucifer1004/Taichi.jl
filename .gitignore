@@ -4,7 +4,7 @@
 /*.jl
 .CondaPkg
 /docs/build/
-/docs/CondaPkg.toml
+CondaPkg.toml
 __tmp__*.py
-/Manifest.toml
-/CondaPkg.toml
+Manifest.toml
+__pycache__
