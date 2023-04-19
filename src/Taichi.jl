@@ -71,6 +71,7 @@ macro ti_kernel(func)
 end
 
 function __init__()
+    add("python"; version="<3.11")
     add("numpy")
     add_pip("taichi")
     pycopy!(ti, pyimport("taichi"))
