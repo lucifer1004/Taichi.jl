@@ -8,3 +8,5 @@ CondaPkg.toml
 __tmp__*.py
 Manifest.toml
 __pycache__
+
+!/CondaPkg.toml

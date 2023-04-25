@@ -1,0 +1,6 @@
+[pip.deps]
+taichi = ">=1.5"
+
+[deps]
+numpy = ""
+python = ">=3.9,<3.11"
